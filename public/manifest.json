@@ -1,0 +1,18 @@
+{
+  "name": "Health OS · Salud, Gym & Nutrición",
+  "short_name": "Health OS",
+  "description": "Sistema Operativo Personal minimalista ADHD-friendly de Salud, Gym y Nutrición con IA.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#090A0C",
+  "theme_color": "#090A0C",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

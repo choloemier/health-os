@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model UserConfig {
+  id                  Int      @id @default(1)
+  sexo                String   @default("M")    // "M" | "F"
+  edad                Int      @default(28)
+  altura_cm           Float    @default(175)
+  peso_base_kg        Float    @default(80)
+  factor_actividad    Float    @default(1.45)   // 1.2 a 1.75
+  deficit_pct         Float    @default(20)     // % de déficit (ej. 15%, 20%, 25%)
+  proteina_g_kg       Float    @default(1.8)    // g de proteína por kg de peso
+  modo_auto_macros    Boolean  @default(true)   // recalcula metas al variar peso/déficit
+  calorias_meta       Int      @default(2050)
+  proteina_meta       Int      @default(144)
+  fibra_meta          Int      @default(30)
+  agua_meta           Int      @default(2800)   // en ml
+  rutina_actual_index Int      @default(0)      // 0: Torso A, 1: Pierna A, 2: Torso B, 3: Pierna B
+  updatedAt           DateTime @updatedAt
+}
+
+model DailyLog {
+  id                   String   @id @default(cuid())
+  fecha                String   @unique // YYYY-MM-DD
+  peso_kg              Float?
+  cintura_cm           Float?
+  sueno_horas          Float?
+  agua_ml              Int      @default(0)
+  creatina_ok          Boolean  @default(false)
+  rutina_matutina      Json     @default("{}")
+  caminata_post_comida Boolean  @default(false)
+  gym_postergado       Boolean  @default(false)
+  modo_express         Boolean  @default(false)
+  notas                String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([fecha])
+}
+
+model WorkoutTemplate {
+  id          String             @id @default(cuid())
+  slug        String             @unique
+  nombre      String
+  enfoque     String?
+  orden       Int
+  ejercicios  ExerciseTemplate[]
+  sesiones    WorkoutSession[]
+}
+
+model ExerciseTemplate {
+  id                      String          @id @default(cuid())
+  slug                    String          @unique
+  workout_template_id     String
+  workoutTemplate         WorkoutTemplate @relation(fields: [workout_template_id], references: [id], onDelete: Cascade)
+  nombre_plan_a           String
+  nombre_plan_b           String
+  reps_min                Int
+  reps_max                Int
+  es_unilateral           Boolean         @default(false)
+  series_meta             Int
+  descanso_seg            Int
+  es_superserie           Boolean         @default(false)
+  grupo_superserie        String?
+  es_compuesto            Boolean         @default(true)
+  peso_inicial_a          Float           @default(20)
+  peso_inicial_b          Float           @default(15)
+  orden                   Int
+  sets                    SetLog[]
+
+  @@index([workout_template_id, orden])
+}
+
+model WorkoutSession {
+  id                  String          @id @default(cuid())
+  fecha               String          // YYYY-MM-DD
+  workout_template_id String
+  workoutTemplate     WorkoutTemplate @relation(fields: [workout_template_id], references: [id], onDelete: Cascade)
+  es_express          Boolean         @default(false)
+  completada          Boolean         @default(false)
+  notas               String?
+  sets                SetLog[]
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  @@unique([fecha, workout_template_id])
+  @@index([fecha])
+}
+
+model SetLog {
+  id                   String           @id @default(cuid())
+  fecha                String           // YYYY-MM-DD
+  workout_session_id   String
+  workoutSession       WorkoutSession   @relation(fields: [workout_session_id], references: [id], onDelete: Cascade)
+  exercise_template_id String
+  exerciseTemplate     ExerciseTemplate @relation(fields: [exercise_template_id], references: [id], onDelete: Cascade)
+  numero_serie         Int
+  variante_usada       String           @default("A") // "A" o "B"
+  peso_asignado_kg     Float
+  peso_real_kg         Float
+  reps                 Int
+  sensacion_rir        String           // "FACIL" | "JUSTO" | "AL_LIMITE" | "MUY_PESADO"
+  notas                String?
+  createdAt            DateTime         @default(now())
+
+  @@index([exercise_template_id, variante_usada, fecha])
+  @@index([workout_session_id])
+}
+
+model FoodPreset {
+  id            String  @id @default(cuid())
+  slug          String  @unique
+  categoria     String  // "PROTEINA" | "CARBOHIDRATO" | "VEGETAL_GRASA"
+  nombre        String
+  porcion_texto String
+  kcal          Int
+  proteina      Float
+  fibra         Float
+  alerta_sodio  Boolean @default(false)
+  beneficio_tag String?
+  orden         Int     @default(0)
+}
+
+model MealEntry {
+  id                  String   @id @default(cuid())
+  fecha               String   // YYYY-MM-DD
+  bloque_horario      String   // "MANANA" | "TARDE" | "NOCHE"
+  texto_original      String?
+  nombre              String
+  multiplicador       Float    @default(1)
+  kcal                Int
+  proteina            Float
+  fibra               Float
+  bandera_sodio_grasa String?
+  es_estimacion_ia    Boolean  @default(false)
+  recomendacion_ia    String?
+  createdAt           DateTime @default(now())
+
+  @@index([fecha])
+}
